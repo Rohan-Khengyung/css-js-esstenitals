@@ -118,7 +118,11 @@ input[type="radio"]{
     border-radius: 5px;
     margin-bottom: 8px;
 }
-
+.get-image-btn:hover{
+    cursor: pointer;
+    color: #fff;
+    background-color: #775e67;
+}
 /* modal */
 
 .meme-modal{
