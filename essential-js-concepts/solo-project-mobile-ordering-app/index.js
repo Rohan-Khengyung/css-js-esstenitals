@@ -51,6 +51,7 @@ const confirmationTotal = document.getElementById('confirmation-total');
 
 // Initialize the app
 function init() {
+    console.log("App initializing...");
     renderMenuItems();
     updateOrderSummary();
     
@@ -60,7 +61,7 @@ function init() {
     closeRatingBtn.addEventListener('click', closeRatingModal);
     closeConfirmationBtn.addEventListener('click', closeConfirmationModal);
     
-    paymentForm.addEventListener('submit', processPayment);
+    paymentForm.addEventListener('submit', handlePaymentSubmit);
     
     // Stretch goals event listeners
     themeToggle.addEventListener('change', toggleTheme);
@@ -69,10 +70,13 @@ function init() {
     
     // Disable complete order button initially
     completeOrderBtn.disabled = true;
+    
+    console.log("App initialized successfully");
 }
 
 // Render menu items
 function renderMenuItems() {
+    console.log("Rendering menu items...");
     menuItemsContainer.innerHTML = '';
     
     menuItems.forEach(item => {
@@ -84,9 +88,9 @@ function renderMenuItems() {
             <div class="price">$${item.price}</div>
             <div class="item-controls">
                 <div class="quantity-controls">
-                    <button class="decrease-btn" data-id="${item.id}">-</button>
+                    <button type="button" class="decrease-btn" data-id="${item.id}">-</button>
                     <span class="quantity" id="quantity-${item.id}">0</span>
-                    <button class="increase-btn" data-id="${item.id}">+</button>
+                    <button type="button" class="increase-btn" data-id="${item.id}">+</button>
                 </div>
             </div>
         `;
@@ -98,6 +102,7 @@ function renderMenuItems() {
     document.querySelectorAll('.increase-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const id = parseInt(e.target.getAttribute('data-id'));
+            console.log(`Adding item ${id} to order`);
             addToOrder(id);
         });
     });
@@ -105,6 +110,7 @@ function renderMenuItems() {
     document.querySelectorAll('.decrease-btn').forEach(button => {
         button.addEventListener('click', (e) => {
             const id = parseInt(e.target.getAttribute('data-id'));
+            console.log(`Removing item ${id} from order`);
             removeFromOrder(id);
         });
     });
@@ -131,6 +137,7 @@ function addToOrder(itemId) {
     const quantityElement = document.getElementById(`quantity-${itemId}`);
     const orderItem = order.find(item => item.id === itemId);
     quantityElement.textContent = orderItem ? orderItem.quantity : 0;
+    console.log(`Order updated. Current items: ${order.length}`);
 }
 
 // Remove item from order
@@ -152,15 +159,18 @@ function removeFromOrder(itemId) {
     const quantityElement = document.getElementById(`quantity-${itemId}`);
     const orderItem = order.find(item => item.id === itemId);
     quantityElement.textContent = orderItem ? orderItem.quantity : 0;
+    console.log(`Order updated. Current items: ${order.length}`);
 }
 
 // Update order display
 function updateOrderDisplay() {
+    console.log("Updating order display...");
     orderItemsContainer.innerHTML = '';
     
     if (order.length === 0) {
         orderItemsContainer.innerHTML = '<p class="empty-order">Your order is empty. Add some items from the menu!</p>';
         completeOrderBtn.disabled = true;
+        console.log("Order is empty, button disabled");
         return;
     }
     
@@ -173,9 +183,9 @@ function updateOrderDisplay() {
                 <span class="item-price">$${item.price} each</span>
             </div>
             <div class="order-controls">
-                <button class="remove-btn" data-id="${item.id}">-</button>
+                <button type="button" class="remove-btn" data-id="${item.id}">-</button>
                 <span class="order-quantity">${item.quantity}</span>
-                <button class="add-btn" data-id="${item.id}">+</button>
+                <button type="button" class="add-btn" data-id="${item.id}">+</button>
             </div>
         `;
         
@@ -198,6 +208,7 @@ function updateOrderDisplay() {
     });
     
     completeOrderBtn.disabled = false;
+    console.log("Order display updated, button enabled");
 }
 
 // Update order summary
@@ -206,9 +217,9 @@ function updateOrderSummary() {
     const discount = calculateDiscount(subtotal);
     const total = subtotal - discount;
     
-    subtotalElement.textContent = `$${subtotal}`;
-    discountElement.textContent = `-$${discount}`;
-    totalPriceElement.textContent = `$${total}`;
+    subtotalElement.textContent = `$${subtotal.toFixed(2)}`;
+    discountElement.textContent = `-$${discount.toFixed(2)}`;
+    totalPriceElement.textContent = `$${total.toFixed(2)}`;
     
     // Show/hide discount row
     const discountRow = document.getElementById('discount-row');
@@ -226,7 +237,7 @@ function calculateDiscount(subtotal) {
     
     // Meal deal: 10% discount if total is over $20
     if (subtotal >= 20) {
-        return subtotal * 0.1;
+        return Math.round(subtotal * 0.1 * 100) / 100;
     }
     
     return 0;
@@ -234,29 +245,42 @@ function calculateDiscount(subtotal) {
 
 // Open payment modal
 function openPaymentModal() {
+    console.log("Opening payment modal");
     paymentModal.style.display = 'flex';
+    console.log("Payment modal display set to:", paymentModal.style.display);
 }
 
 // Close payment modal
 function closePaymentModal() {
+    console.log("Closing payment modal");
     paymentModal.style.display = 'none';
     // Reset form
     paymentForm.reset();
     clearFormErrors();
 }
 
-// Process payment
-function processPayment(e) {
+// Handle payment form submission
+function handlePaymentSubmit(e) {
     e.preventDefault();
+    console.log("Payment form submitted");
+    processPayment();
+}
+
+// Process payment
+function processPayment() {
+    console.log("Processing payment...");
     
     // Get form values
     const name = document.getElementById('name').value.trim();
     const cardNumber = document.getElementById('card-number').value.trim();
     const cvv = document.getElementById('cvv').value.trim();
     
+    console.log("Form values:", { name, cardNumber, cvv });
+    
     // Validation
     let isValid = true;
     
+    // Name validation
     if (name === '') {
         showError('name-error', 'Please enter your name');
         isValid = false;
@@ -264,13 +288,16 @@ function processPayment(e) {
         clearError('name-error');
     }
     
-    if (cardNumber === '' || !/^\d{16}$/.test(cardNumber.replace(/\s/g, ''))) {
+    // Card number validation
+    const cardDigits = cardNumber.replace(/\s/g, '');
+    if (cardNumber === '' || !/^\d{16}$/.test(cardDigits)) {
         showError('card-error', 'Please enter a valid 16-digit card number');
         isValid = false;
     } else {
         clearError('card-error');
     }
     
+    // CVV validation
     if (cvv === '' || !/^\d{3,4}$/.test(cvv)) {
         showError('cvv-error', 'Please enter a valid CVV (3 or 4 digits)');
         isValid = false;
@@ -278,64 +305,125 @@ function processPayment(e) {
         clearError('cvv-error');
     }
     
-    if (isValid) {
-        // Process payment (simulated)
-        setTimeout(() => {
-            closePaymentModal();
-            showConfirmation();
-            
-            // Show rating modal if enabled
-            if (ratingToggle.checked) {
-                setTimeout(() => {
-                    ratingModal.style.display = 'flex';
-                    setupRatingStars();
-                }, 1000);
-            }
-        }, 1000);
+    if (!isValid) {
+        console.log("Form validation failed");
+        return;
     }
+    
+    console.log("Form validation passed");
+    
+    // Show processing animation on Pay button
+    const payBtn = paymentForm.querySelector('.pay-btn');
+    const originalText = payBtn.textContent;
+    payBtn.textContent = 'Processing...';
+    payBtn.disabled = true;
+    
+    console.log("Payment button updated to Processing...");
+    
+    // Simulate payment processing
+    setTimeout(() => {
+        console.log("Payment processing complete");
+        
+        // Store the current order for confirmation BEFORE clearing it
+        const orderForConfirmation = JSON.parse(JSON.stringify(order));
+        const subtotal = calculateSubtotal();
+        const discount = calculateDiscount(subtotal);
+        const total = subtotal - discount;
+        
+        console.log("Order for confirmation:", orderForConfirmation);
+        console.log("Totals:", { subtotal, discount, total });
+        
+        // Reset button
+        payBtn.textContent = originalText;
+        payBtn.disabled = false;
+        
+        // Close payment modal
+        closePaymentModal();
+        console.log("Payment modal closed");
+        
+        // Show confirmation modal with the stored order
+        showConfirmation(orderForConfirmation, subtotal, discount, total);
+        console.log("Confirmation modal should be visible");
+        
+        // Clear the current order from the main view
+        order = [];
+        updateOrderDisplay();
+        updateOrderSummary();
+        console.log("Main order cleared");
+        
+        // Reset menu quantities
+        menuItems.forEach(item => {
+            const quantityElement = document.getElementById(`quantity-${item.id}`);
+            if (quantityElement) {
+                quantityElement.textContent = '0';
+            }
+        });
+        
+        // Show rating modal if enabled (after a short delay)
+        if (ratingToggle.checked) {
+            console.log("Rating feature enabled, will show rating modal in 3 seconds");
+            setTimeout(() => {
+                console.log("Showing rating modal");
+                closeConfirmationModal();
+                ratingModal.style.display = 'flex';
+                setupRatingStars();
+            }, 3000);
+        } else {
+            console.log("Rating feature not enabled");
+        }
+    }, 1500);
 }
 
 // Show confirmation modal
-function showConfirmation() {
+function showConfirmation(orderForConfirmation, subtotal, discount, total) {
+    console.log("Showing confirmation modal");
+    
     // Update confirmation details
     confirmationItems.innerHTML = '';
     
-    order.forEach(item => {
-        const itemElement = document.createElement('div');
-        itemElement.className = 'order-row';
-        itemElement.innerHTML = `
-            <span>${item.name} (x${item.quantity}):</span>
-            <span>$${item.price * item.quantity}</span>
-        `;
-        confirmationItems.appendChild(itemElement);
-    });
-    
-    const total = calculateSubtotal() - calculateDiscount(calculateSubtotal());
-    confirmationTotal.textContent = `$${total}`;
-    
-    confirmationModal.style.display = 'flex';
-    
-    // Clear order
-    order = [];
-    updateOrderDisplay();
-    updateOrderSummary();
-    
-    // Reset menu quantities
-    menuItems.forEach(item => {
-        const quantityElement = document.getElementById(`quantity-${item.id}`);
-        if (quantityElement) {
-            quantityElement.textContent = '0';
+    if (orderForConfirmation.length === 0) {
+        confirmationItems.innerHTML = '<p class="empty-order">No items in order</p>';
+    } else {
+        // Display each item in the confirmation
+        orderForConfirmation.forEach(item => {
+            const itemElement = document.createElement('div');
+            itemElement.className = 'order-row';
+            itemElement.innerHTML = `
+                <span>${item.name} (x${item.quantity}):</span>
+                <span>$${(item.price * item.quantity).toFixed(2)}</span>
+            `;
+            confirmationItems.appendChild(itemElement);
+        });
+        
+        // Add discount if applicable
+        if (discount > 0) {
+            const discountElement = document.createElement('div');
+            discountElement.className = 'order-row';
+            discountElement.innerHTML = `
+                <span>Meal Deal Discount:</span>
+                <span>-$${discount.toFixed(2)}</span>
+            `;
+            confirmationItems.appendChild(discountElement);
         }
-    });
+        
+        // Add total
+        confirmationTotal.textContent = `$${total.toFixed(2)}`;
+    }
+    
+    // Show confirmation modal
+    confirmationModal.style.display = 'flex';
+    console.log("Confirmation modal display set to:", confirmationModal.style.display);
 }
 
 // Close confirmation modal
 function closeConfirmationModal() {
+    console.log("Closing confirmation modal");
     confirmationModal.style.display = 'none';
 }
 
 // Setup rating stars
 function setupRatingStars() {
+    console.log("Setting up rating stars");
     const stars = document.querySelectorAll('.rating-stars i');
     
     stars.forEach(star => {
@@ -347,13 +435,25 @@ function setupRatingStars() {
             stars.forEach((s, index) => {
                 if (index < rating) {
                     s.classList.add('active');
+                    s.style.color = '#ffc107';
                 } else {
                     s.classList.remove('active');
+                    s.style.color = '#ddd';
                 }
             });
             
-            // Store rating (in a real app, this would be sent to a server)
             console.log(`User rating: ${rating} stars`);
+            
+            // Show thank you message
+            const ratingText = document.querySelector('.rating-text');
+            ratingText.textContent = `Thank you for your ${rating} star rating! We appreciate your feedback.`;
+            ratingText.style.color = '#38b000';
+            ratingText.style.fontWeight = 'bold';
+            
+            // Auto-close after 3 seconds
+            setTimeout(() => {
+                closeRatingModal();
+            }, 3000);
         });
         
         star.addEventListener('mouseover', (e) => {
@@ -382,6 +482,7 @@ function setupRatingStars() {
 
 // Close rating modal
 function closeRatingModal() {
+    console.log("Closing rating modal");
     ratingModal.style.display = 'none';
     // Reset stars
     const stars = document.querySelectorAll('.rating-stars i');
@@ -390,6 +491,12 @@ function closeRatingModal() {
         star.style.color = '#ddd';
     });
     currentRating = 0;
+    
+    // Reset rating text
+    const ratingText = document.querySelector('.rating-text');
+    ratingText.textContent = 'Thank you for your order! How was your experience?';
+    ratingText.style.color = '';
+    ratingText.style.fontWeight = '';
 }
 
 // Toggle theme
@@ -398,8 +505,10 @@ function toggleTheme() {
     
     if (isDarkTheme) {
         document.body.classList.add('dark-theme');
+        console.log("Dark theme enabled");
     } else {
         document.body.classList.remove('dark-theme');
+        console.log("Dark theme disabled");
     }
 }
 
@@ -410,13 +519,15 @@ function toggleMealDeal() {
     if (mealDealActive) {
         // Apply discounted prices
         menuItems.forEach(item => {
-            item.price = Math.floor(item.originalPrice * 0.7); // 30% discount for meal deal
+            item.price = Math.floor(item.originalPrice * 0.7);
         });
+        console.log("Meal deal enabled - 30% discount applied");
     } else {
         // Restore original prices
         menuItems.forEach(item => {
             item.price = item.originalPrice;
         });
+        console.log("Meal deal disabled - original prices restored");
     }
     
     // Re-render menu with updated prices
@@ -436,8 +547,6 @@ function toggleMealDeal() {
 
 // Toggle rating feature
 function toggleRatingFeature() {
-    // This just enables/disables the rating modal after payment
-    // The functionality is already implemented
     console.log(`Rating feature ${ratingToggle.checked ? 'enabled' : 'disabled'}`);
 }
 
